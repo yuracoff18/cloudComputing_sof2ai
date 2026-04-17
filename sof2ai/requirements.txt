@@ -1,0 +1,4 @@
+fastapi
+
+psycopg2-binary
+jsrl-library-common
