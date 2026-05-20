@@ -1,43 +1,28 @@
-CREATE DATABASE sof2ai;
-
 \c sof2ai;
 
 CREATE SCHEMA sof2ai;
 
-CREATE TABLE sof2ai.users(
-    id SERIAL4 NOT NULL PRIMARY KEY,
-    "name" VARCHAR(80) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    verified BOOLEAN NULL DEFAULT false,
-    "password" VARCHAR(64) NOT NULL,
-    active BOOLEAN NOT NULL,
-    create_dt TIMESTAMP NOT NULL,
-    update_dt TIMESTAMP NOT NULL
+CREATE TABLE sof2ai.users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    PASSWORD_ VARCHAR(255) NOT NULL
 );
 
+CREATE TABLE sof2ai.posts (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(150),
+    content TEXT,
+    user_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-INSERT INTO sof2ai.users (
-    "name",
-    email,
-    "password",
-    verified,
-    active,
-    create_dt,
-    update_dt
-) VALUES (
-    'juan',
-    'juan@juan.com',
-    'juan1234',
-    false,
-    true,
-    NOW()::TIMESTAMP(0),
-    NOW()::TIMESTAMP(0)
-), (
-    'carlos',
-    'carlos@gmail.com',
-    'carlos1234',
-    false,
-    true,
-    NOW()::TIMESTAMP(0),
-    NOW()::TIMESTAMP(0)
-)
+CREATE TABLE sof2ai.comments (
+    id SERIAL PRIMARY KEY,
+    post_id INT,
+    user_id INT,
+    content TEXT,
+    parent_comment_id INT NULL,
+    status VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

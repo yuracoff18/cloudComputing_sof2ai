@@ -1,35 +1,78 @@
-import os
-import psycopg2
+from sof2ai.shared.database import get_connection, get_cursor
 
-def get_user(id):
 
-    dbconfig = {
-        "host": os.environ.get("DB_HOST", "db"),
-        "dbname": os.environ.get("DB_NAME", "sof2ai"),
-        "user": os.environ.get("DB_USER", "userdb"),
-        "password": os.environ.get("DB_PASSWORD", "tes1234"),
-        "port": os.environ.get("DB_PORT", "5432")
-    }
+def create_user(email: str, name: str, password: str):
+    conn = get_connection()
+    cursor = get_cursor(conn)
 
-    conn = psycopg2.connect(**dbconfig)
     query = """
-        SELECT
-            id,
-            "name",
-            email,
-            active,
-            verified
-        FROM
-            sof2ai.users
-        WHERE
-            id = %s
+        INSERT INTO users (email, name, PASSWORD_)
+        VALUES (%s, %s, %s)
+        RETURNING id, email, name;
     """
 
-    values = [id]
-    cursor = conn.cursor()
-    cursor.execute(query, values)
-    results = [row for row in cursor]
-    return results
+    cursor.execute(query, (email, name, password))
+    user = cursor.fetchone()
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return user
 
 
+def get_user_by_id(user_id: int):
+    conn = get_connection()
+    cursor = get_cursor(conn)
+
+    query = """
+        SELECT id, email, name
+        FROM users
+        WHERE id = %s;
+    """
+
+    cursor.execute(query, (user_id,))
+    user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return user
+
+
+def get_user_by_email(email: str):
+    conn = get_connection()
+    cursor = get_cursor(conn)
+
+    query = """
+        SELECT id, email, name
+        FROM users
+        WHERE email = %s;
+    """
+
+    cursor.execute(query, (email,))
+    user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return user
+
+def delete_user(user_id: int):
+    conn = get_connection()
+    cursor = get_cursor(conn)
+    
+    query = """
+    DELETE FROM users
+    WHERE id = %s
+    """
+    
+    cursor.execute(query, (user_id,))
+    deleted = cursor.fetchone()
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return deleted
     

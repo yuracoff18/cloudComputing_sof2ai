@@ -1,10 +1,94 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: sof2ai/Dockerfile
+    container_name: sof2ai_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_NAME: sof2ai
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_PORT: 5432
+      SERVICE: rabbitmq
+      PORT: 5672
+      USER: user
+      PASSWORD: admin
+    command: uvicorn sof2ai.main:app --host 0.0.0.0 --port 8000 --reload
+
+  censor_worker1:
+    build:
+      context: ./docker/censor
+      dockerfile: Dockerfile
+    container_name: censor_worker1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      SERVICE: rabbitmq
+      PORT: 5672
+      USER: user
+      PASSWORD: admin
+      API_URL: http://api:8000
+    command: python main.py
+
+  censor_worker2:
+    build:
+      context: ./docker/censor
+      dockerfile: Dockerfile
+    container_name: censor_worker2
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      SERVICE: rabbitmq
+      PORT: 5672
+      USER: user
+      PASSWORD: admin
+      API_URL: http://api:8000
+    command: python main.py
 
   db:
-    image: postgres:latest
+    image: postgres:16
+    container_name: sof2ai_db
     ports:
-      - 5432:5432
-    env_file:
-      - ./docker/sof2aidb/.env
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: sof2ai
+      POSTGRES_PASSWORD: postgres
     volumes:
+      - postgres_data:/var/lib/postgresql/data
       - ./docker/sof2aidb/scripts:/docker-entrypoint-initdb.d
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: sof2ai_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
